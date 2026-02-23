@@ -55,7 +55,7 @@ fronX-SOC/
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/fronX-SOC.git
-cd fronX-SOC/backend
+cd fronX-SOC
 ```
 
 ---
