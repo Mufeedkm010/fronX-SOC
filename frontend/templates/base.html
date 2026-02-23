@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>fronX SOC</title>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <!-- =========================
+         TOOL + USER PANEL
+    ========================== -->
+
+    <div class="sidebar-user">
+
+        <div class="tool-name">fronX SOC</div>
+
+        <div class="sidebar-header">
+
+            <div class="avatar-circle">
+                {% if current_user.role == "admin" %}
+                    M
+                {% else %}
+                    {{ current_user.id[0] | upper }}
+                {% endif %}
+            </div>
+
+            <div class="user-details">
+
+                <div class="username-row">
+                    <span class="username">
+                        {% if current_user.role == "admin" %}
+                            Mufeed
+                        {% else %}
+                            {{ current_user.id }}
+                        {% endif %}
+                    </span>
+                    <span class="online-dot"></span>
+                </div>
+
+                <div>
+                    {% if current_user.role == "admin" %}
+                        <span class="role-badge admin">Admin</span>
+                    {% else %}
+                        <span class="role-badge analyst">Analyst</span>
+                    {% endif %}
+                </div>
+
+                <div class="last-login">
+                    Last login:
+                    {{ session.get("last_login", "First Login") }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <hr>
+
+    <!-- =========================
+         MENU WITH BADGES
+    ========================== -->
+
+    <a href="/" class="sidebar-link">
+        Overview
+        <span class="side-badge high" id="badge-overview">0</span>
+    </a>
+
+    <a href="/analytics">Analytics</a>
+    <a href="/mitre" class="sidebar-link">
+        MITRE ATT&CK
+        <span class="side-badge high" id="badge-mitre">0</span>
+    </a>
+
+    <a href="/map">Threat Map</a>
+
+    <hr>
+
+    <a href="/incidents" class="sidebar-link">
+        Incidents
+        <span class="side-badge critical" id="badge-incidents">0</span>
+    </a>
+
+    <a href="/cases" class="sidebar-link">
+        Case Management
+        <span class="side-badge medium" id="badge-cases">0</span>
+    </a>
+
+    <a href="/ioc" class="sidebar-link">
+        IOC Management
+        <span class="side-badge low" id="badge-ioc">0</span>
+    </a>
+
+    <a href="/threat-intel">Threat Intelligence</a>
+
+    <hr>
+
+    <a href="/honeypot" class="sidebar-link">
+        Honeypot
+        <span class="side-badge high" id="badge-honeypot">0</span>
+    </a>
+
+    {% if current_user.role == "admin" %}
+    <a href="/audit" class="sidebar-link">
+        Audit Logs
+        <span class="side-badge" id="badge-audit">0</span>
+    </a>
+
+    <a href="/system-health">System Health</a>
+
+    <hr>
+
+    <a href="/reports">Reports</a>
+    <a href="/settings">Settings</a>
+    {% endif %}
+
+    <a href="/logout" class="logout">Logout</a>
+
+</div>
+
+<div class="main-content">
+    {% block content %}{% endblock %}
+</div>
+
+<script>
+
+/* ===============================
+   ACTIVE LINK
+=============================== */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    let links = document.querySelectorAll(".sidebar a");
+    let current = window.location.pathname;
+
+    links.forEach(link => {
+        if (link.getAttribute("href") === current) {
+            link.classList.add("active");
+        }
+    });
+
+});
+
+
+/* ===============================
+   SIDEBAR BADGE AUTO UPDATE
+=============================== */
+
+async function updateSidebarBadges() {
+
+    try {
+
+        // SOC Metrics
+        const metricsRes = await fetch("/api/soc_metrics");
+        const metrics = await metricsRes.json();
+
+        const overview = document.getElementById("badge-overview");
+        const incidents = document.getElementById("badge-incidents");
+
+        if (overview) overview.innerText = metrics.high_alerts;
+        if (incidents) incidents.innerText = metrics.open_incidents;
+
+        // MITRE Badge
+        const mitreRes = await fetch("/api/mitre_heatmap");
+        const mitreData = await mitreRes.json();
+        const totalMapped = mitreData.reduce((sum, t) => sum + t[3], 0);
+
+        const mitreBadge = document.getElementById("badge-mitre");
+        if (mitreBadge) mitreBadge.innerText = totalMapped;
+
+        // Cases
+        const casesRes = await fetch("/api/cases");
+        const cases = await casesRes.json();
+        const openCases = cases.filter(c => c[3] === "Open").length;
+
+        const caseBadge = document.getElementById("badge-cases");
+        if (caseBadge) caseBadge.innerText = openCases;
+
+        // IOC
+        const iocRes = await fetch("/api/iocs");
+        const iocs = await iocRes.json();
+
+        const iocBadge = document.getElementById("badge-ioc");
+        if (iocBadge) iocBadge.innerText = iocs.length;
+
+        // Honeypot
+        const hpRes = await fetch("/api/honeypot_logs");
+        const hpLogs = await hpRes.json();
+
+        const hpBadge = document.getElementById("badge-honeypot");
+        if (hpBadge) hpBadge.innerText = hpLogs.length;
+
+        // Audit (Admin only)
+        {% if current_user.role == "admin" %}
+        const auditRes = await fetch("/api/audit");
+        const auditLogs = await auditRes.json();
+
+        const auditBadge = document.getElementById("badge-audit");
+        if (auditBadge) auditBadge.innerText = auditLogs.length;
+        {% endif %}
+
+    } catch (err) {
+        console.error("Badge update error:", err);
+    }
+}
+
+
+document.addEventListener("DOMContentLoaded", updateSidebarBadges);
+setInterval(updateSidebarBadges, 5000);
+
+</script>
+
+</body>
+</html>

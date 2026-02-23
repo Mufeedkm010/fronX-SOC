@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- HEADER TOOLBAR -->
+<div class="overview-header">
+
+    <h1>Security Overview</h1>
+
+    <div class="overview-controls">
+
+        <!-- Filter -->
+        <select id="threatFilter" onchange="filterLogs()">
+            <option value="All">All</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+        </select>
+
+        <!-- Export -->
+        <button class="soc-btn primary" onclick="exportLogs()">
+            ⬇ Export CSV
+        </button>
+
+        <!-- Clear -->
+        <button class="clear-btn" onclick="confirmClear()">
+            🗑 Clear Threats
+        </button>
+
+    </div>
+
+</div>
+
+<!-- DONUT -->
+<div class="card donut-card">
+    <div class="donut-container">
+        <canvas id="threatChart"></canvas>
+    </div>
+</div>
+
+<!-- LIVE FEED -->
+<div class="card">
+    <h3>Live Threat Feed</h3>
+    <div id="logs"></div>
+</div>
+<div class="card">
+    <h3>🚨 Open Incidents</h3>
+    <div id="overviewIncidents"></div>
+</div>
+
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+{% endblock %}

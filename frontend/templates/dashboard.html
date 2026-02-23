@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>fronX Security Operations Center</title>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>fronX Security Operations Center</h1>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+        <div class="card low">
+            <h3>Low Threats</h3>
+            <span id="lowCount">0</span>
+        </div>
+
+        <div class="card medium">
+            <h3>Medium Threats</h3>
+            <span id="mediumCount">0</span>
+        </div>
+
+        <div class="card high">
+            <h3>High Threats</h3>
+            <span id="highCount">0</span>
+        </div>
+    </div>
+
+    <!-- FILTER -->
+    <div class="filter-panel">
+        <input type="text" id="searchBox" placeholder="Search logs...">
+        <select id="levelFilter">
+            <option value="">All Levels</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+        </select>
+        <button onclick="loadLogs()">Filter</button>
+        <button onclick="exportPDF()">Export Report</button>
+    </div>
+
+    <!-- CHART SECTION -->
+    <div class="chart-wrapper">
+        <div class="chart-card">
+            <h3>Threat Distribution</h3>
+            <canvas id="chart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>Threat Activity Timeline</h3>
+            <canvas id="timeChart"></canvas>
+        </div>
+    </div>
+
+    <!-- LIVE FEED -->
+    <div class="log-container">
+        <h2>Live Threat Feed</h2>
+        <div id="logs"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+
+</body>
+</html>

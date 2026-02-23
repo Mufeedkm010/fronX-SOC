@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Audit Logs</h1>
+    <p>Track administrative and analyst activities</p>
+</div>
+
+<div class="soc-card">
+
+    <div class="audit-header">
+        <button class="soc-btn danger" onclick="clearAudit()">
+            Clear Audit Logs
+        </button>
+    </div>
+
+    <table class="soc-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="auditTable"></tbody>
+    </table>
+</div>
+
+<script>
+function loadAuditLogs(){
+    fetch("/api/audit")
+    .then(res => res.json())
+    .then(data => {
+        let table = document.getElementById("auditTable");
+        table.innerHTML = "";
+
+        if(data.length === 0){
+            table.innerHTML = `
+                <tr>
+                    <td colspan="3">No audit activity yet.</td>
+                </tr>`;
+            return;
+        }
+
+        data.forEach(a => {
+            table.innerHTML += `
+                <tr>
+                    <td>${a[1]}</td>
+                    <td>${a[2]}</td>
+                    <td>${a[3]}</td>
+                </tr>`;
+        });
+    });
+}
+function clearAudit(){
+    fetch("/clear_audit", { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === "cleared"){
+            loadAuditLogs();
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", loadAuditLogs);
+</script>
+
+{% endblock %}

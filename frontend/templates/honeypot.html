@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Honeypot Control Center</h1>
+
+<div class="hp-dashboard">
+
+    <div class="hp-top-card">
+        <div>
+            <h3>Status</h3>
+            <p id="honeypotStatus" class="hp-status-text">Checking...</p>
+        </div>
+
+        <div class="hp-controls">
+            <button onclick="startHoneypot()" class="hp-btn hp-start">Start</button>
+            <button onclick="stopHoneypot()" class="hp-btn hp-stop">Stop</button>
+            <button onclick="clearHoneypotLogs()" class="hp-btn hp-clear">Clear</button>
+        </div>
+
+        <div class="hp-counter">
+            Attacks: <span id="hpCounter">0</span>
+        </div>
+    </div>
+
+    <div class="hp-analytics">
+        <canvas id="honeypotChart"></canvas>
+    </div>
+
+    <div class="hp-session-table">
+        <h3>Honeypot Session Timeline</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Attacker IP</th>
+                    <th>Geo</th>
+                    <th>Risk</th>
+                </tr>
+            </thead>
+            <tbody id="honeypotTable"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+{% endblock %}

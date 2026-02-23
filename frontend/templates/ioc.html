@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>IOC Management</h1>
+    <p>Manage malicious indicators and threat intelligence feeds</p>
+</div>
+
+<div class="soc-card">
+
+    <div class="card-header">
+        <h3>Add New Indicator</h3>
+    </div>
+
+    <div class="ioc-form-row">
+        <input type="text" id="iocInput" placeholder="Enter Malicious IP Address">
+        <button class="soc-btn primary" onclick="addIOC()">Add IOC</button>
+    </div>
+
+</div>
+
+<div class="soc-card">
+
+    <div class="card-header ioc-header">
+    <h3>Active IOC List</h3>
+
+    <button class="soc-btn danger" onclick="clearAllIOCs()">
+        Clear All IOCs
+    </button>
+</div>
+
+    <div class="ioc-table-wrapper">
+        <table class="soc-table">
+            <thead>
+    <tr>
+        <th>ID</th>
+        <th>Malicious IP</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+</thead>
+            <tbody id="iocList"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    window.isAdmin = {{ 'true' if current_user.role == 'admin' else 'false' }};
+</script>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}

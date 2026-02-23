@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f172a, #111827);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #e2e8f0;
+}
+
+/* Center wrapper */
+.login-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Card */
+.login-card {
+    width: 380px;
+    background: #1e293b;
+    padding: 40px;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+/* Logo */
+.login-card h1 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 30px;
+}
+
+/* Input */
+.input-group {
+    margin-bottom: 20px;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+input:focus {
+    border-color: #38bdf8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(56,189,248,0.3);
+}
+
+/* Button */
+button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: #38bdf8;
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #0ea5e9;
+}

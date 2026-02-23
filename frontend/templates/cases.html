@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Case Management</h1>
+    <p>Manage investigations and analyst assignments</p>
+</div>
+
+<!-- Create Case -->
+<div class="soc-card">
+    <div class="form-row">
+        <input type="text" id="caseTitle" placeholder="Enter Case Title">
+        <button class="soc-btn primary" onclick="createCase()">
+            Create Case
+        </button>
+    </div>
+</div>
+
+<!-- Header + Clear Button -->
+<div class="overview-header">
+    <h2>Active Cases</h2>
+    <button class="clear-btn" onclick="clearCases()">
+        Clear Cases
+    </button>
+</div>
+
+<!-- Case Table -->
+<div class="soc-card">
+    <table class="soc-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="caseTable"></tbody>
+    </table>
+</div>
+
+<script>
+
+function loadCases(){
+    fetch("/api/cases")
+    .then(res=>res.json())
+    .then(data=>{
+        let table=document.getElementById("caseTable");
+        table.innerHTML="";
+
+        data.forEach(c=>{
+
+            let statusClass = c[3].toLowerCase();
+
+            table.innerHTML+=`
+                <tr>
+                    <td>${c[0]}</td>
+                    <td>${c[2]}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${c[3]}
+                        </span>
+                    </td>
+                    <td>${c[4]}</td>
+                    <td>
+                        ${c[3] !== "Closed" ? 
+                        `<button class="soc-btn success"
+                            onclick="resolveCase(${c[0]})">
+                            Resolve
+                        </button>` : "✔"}
+                    </td>
+                </tr>`;
+        });
+    });
+}
+
+
+function createCase(){
+
+    let title=document.getElementById("caseTitle").value;
+
+    if(!title){
+        alert("Please enter case title");
+        return;
+    }
+
+    fetch("/case/create",{
+        method:"POST",
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({title:title})
+    })
+    .then(res=>res.json())
+    .then(()=>{
+        document.getElementById("caseTitle").value="";
+        loadCases();
+    });
+}
+
+
+function resolveCase(id){
+
+    if(!confirm("Mark this case as resolved?")) return;
+
+    fetch(`/case/resolve/${id}`, {
+        method:"POST"
+    })
+    .then(res=>res.json())
+    .then(()=>{
+        loadCases();
+    });
+}
+
+
+function clearCases(){
+
+    if(!confirm("Clear ALL cases?")) return;
+
+    fetch("/clear_cases", {
+        method:"POST"
+    })
+    .then(res=>{
+        if(res.status===403){
+            alert("Admin access required");
+            return;
+        }
+        return res.json();
+    })
+    .then(()=>{
+        loadCases();
+    });
+}
+
+loadCases();
+
+</script>
+
+{% endblock %}

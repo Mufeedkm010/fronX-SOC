@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Incident Management</h1>
+    <p>Track, investigate and resolve security incidents</p>
+</div>
+
+<!-- SOC Metrics -->
+<div class="soc-metrics-row">
+    <div class="metric-card">
+        <h3>Open Incidents</h3>
+        <p id="openIncidents">0</p>
+    </div>
+
+    <div class="metric-card">
+        <h3>High Alerts</h3>
+        <p id="highAlerts">0</p>
+    </div>
+</div>
+<div class="overview-header">
+    <h1>Incident Management</h1>
+
+    <button class="clear-btn" onclick="clearIncidents()">
+        Clear Incidents
+    </button>
+</div>
+
+<!-- Incident Table -->
+<div class="soc-card">
+
+    <div class="card-header">
+        <h3>Active Incidents</h3>
+    </div>
+
+    <div class="incident-table-wrapper">
+        <table class="soc-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Time</th>
+                    <th>IP</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="incidentTable"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+{% endblock %}

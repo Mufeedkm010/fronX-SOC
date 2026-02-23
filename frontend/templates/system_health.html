@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>System Health</h1>
+    <p>Monitor SOC infrastructure performance</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="soc-metrics-row">
+
+    <div class="metric-card">
+        <h3>CPU Usage</h3>
+        <div class="progress-bar">
+            <div id="cpuBar" class="progress-fill"></div>
+        </div>
+        <p id="cpu">--%</p>
+    </div>
+
+    <div class="metric-card">
+        <h3>Memory Usage</h3>
+        <div class="progress-bar">
+            <div id="memoryBar" class="progress-fill"></div>
+        </div>
+        <p id="memory">--%</p>
+    </div>
+
+    <div class="metric-card">
+        <h3>Disk Usage</h3>
+        <div class="progress-bar">
+            <div id="diskBar" class="progress-fill"></div>
+        </div>
+        <p id="disk">--%</p>
+    </div>
+
+</div>
+
+<div class="soc-card small-chart-card">
+    <canvas id="healthChart"></canvas>
+</div>
+
+<div class="soc-card">
+    <h3>Server Info</h3>
+    <p><strong>Hostname:</strong> <span id="hostname"></span></p>
+    <p><strong>OS:</strong> <span id="os"></span></p>
+    <p><strong>Uptime:</strong> <span id="uptime"></span></p>
+    <p><strong>SOC Health:</strong> 
+        <span id="healthStatus"></span> 
+        (<span id="healthScore"></span>%)
+    </p>
+</div>
+
+<script>
+
+let ctx = document.getElementById('healthChart').getContext('2d');
+
+let healthChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            { label: 'CPU', data: [], borderColor: '#ef4444', tension: 0.3 },
+            { label: 'Memory', data: [], borderColor: '#3b82f6', tension: 0.3 },
+            { label: 'Disk', data: [], borderColor: '#22c55e', tension: 0.3 }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: { y: { min: 0, max: 100 } }
+    }
+});
+
+function secondsToHms(d) {
+    let h = Math.floor(d / 3600);
+    let m = Math.floor((d % 3600) / 60);
+    let s = Math.floor(d % 60);
+    return h + "h " + m + "m " + s + "s";
+}
+
+function updateBar(id, value){
+    let bar = document.getElementById(id);
+    bar.style.width = value + "%";
+
+    if(value > 80) bar.style.background = "#ef4444";
+    else if(value > 60) bar.style.background = "#facc15";
+    else bar.style.background = "#22c55e";
+}
+
+function loadHealth(){
+
+    fetch("/api/system_health")
+    .then(res=>res.json())
+    .then(data=>{
+
+        document.getElementById("cpu").innerText = data.cpu_usage+"%";
+        document.getElementById("memory").innerText = data.memory_usage+"%";
+        document.getElementById("disk").innerText = data.disk_usage+"%";
+
+        document.getElementById("hostname").innerText = data.hostname;
+        document.getElementById("os").innerText = data.os;
+        document.getElementById("uptime").innerText = secondsToHms(data.uptime);
+        document.getElementById("healthStatus").innerText = data.health_status;
+        document.getElementById("healthScore").innerText = data.health_score;
+
+        updateBar("cpuBar", data.cpu_usage);
+        updateBar("memoryBar", data.memory_usage);
+        updateBar("diskBar", data.disk_usage);
+
+        // Add to chart
+        let time = new Date().toLocaleTimeString();
+
+        healthChart.data.labels.push(time);
+        healthChart.data.datasets[0].data.push(data.cpu_usage);
+        healthChart.data.datasets[1].data.push(data.memory_usage);
+        healthChart.data.datasets[2].data.push(data.disk_usage);
+
+        if(healthChart.data.labels.length > 10){
+            healthChart.data.labels.shift();
+            healthChart.data.datasets.forEach(d => d.data.shift());
+        }
+
+        healthChart.update();
+
+        // CPU Alert
+        if(data.cpu_alert){
+            alert("🚨 CPU Overload for 30 seconds!");
+        }
+
+        // Attack Mode
+        if(data.attack_mode){
+            document.body.style.background = "#3f0000";
+        }
+
+        // AI Anomaly
+        if(data.anomaly_detected){
+            console.log("⚠ AI anomaly detected!");
+        }
+
+    });
+}
+
+setInterval(loadHealth, 3000);
+loadHealth();
+
+</script>
+
+{% endblock %}

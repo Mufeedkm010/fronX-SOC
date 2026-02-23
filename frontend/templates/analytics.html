@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Threat Analytics</h1>
+
+<div class="card chart-card">
+    <div class="chart-wrapper">
+        <canvas id="trendChart"></canvas>
+    </div>
+</div>
+
+<div class="card chart-card">
+    <div class="chart-wrapper">
+        <canvas id="heatChart"></canvas>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+{% endblock %}

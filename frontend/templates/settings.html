@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="settings-wrapper">
+
+    <div class="page-header">
+        <h1>System Settings</h1>
+        <p>Configure detection engine and SOC platform behavior</p>
+    </div>
+
+    <div class="settings-grid">
+
+        <!-- AI SETTINGS -->
+        <div class="soc-card settings-card">
+            <h3>AI Engine Configuration</h3>
+
+            <div class="settings-row">
+                <label>AI Sensitivity (1 - 10)</label>
+                <input type="number" id="ai" min="1" max="10" class="settings-input">
+            </div>
+
+            <!-- AI Progress Bar -->
+            <div class="progress-bar">
+                <div id="aiBar" class="progress-fill"></div>
+            </div>
+
+            <div class="settings-row">
+                <label>Log Retention (Days)</label>
+                <input type="number" id="retention" class="settings-input">
+            </div>
+        </div>
+
+        <!-- HONEYPOT SETTINGS -->
+        <div class="soc-card settings-card">
+            <h3>Honeypot Configuration</h3>
+
+            <div class="settings-row toggle-row">
+                <label>Honeypot Auto-Start</label>
+
+                <label class="switch">
+                    <input type="checkbox" id="honeypotAuto">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="settings-actions">
+        <button class="soc-btn primary" onclick="saveSettings()">
+            Save Configuration
+        </button>
+
+        <button class="soc-btn success" onclick="applyRetention()">
+            Apply Log Retention Cleanup
+        </button>
+
+        <button class="soc-btn primary" onclick="backupDB()">
+            Backup Database
+        </button>
+
+        <button class="soc-btn danger" onclick="resetSettings()">
+            Reset to Default
+        </button>
+    </div>
+
+</div>
+
+<script>
+
+function loadSettings(){
+    fetch("/api/settings")
+    .then(res=>res.json())
+    .then(data=>{
+        document.getElementById("ai").value=data.ai_sensitivity;
+        document.getElementById("retention").value=data.log_retention_days;
+        document.getElementById("honeypotAuto").checked = data.honeypot_autostart == 1;
+        updateBar(data.ai_sensitivity);
+    });
+}
+
+function saveSettings(){
+    let data={
+        ai_sensitivity:parseInt(document.getElementById("ai").value),
+        log_retention_days:parseInt(document.getElementById("retention").value),
+        honeypot_autostart:document.getElementById("honeypotAuto").checked ? 1 : 0
+    };
+
+    fetch("/settings/update",{
+        method:"POST",
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(data)
+    }).then(()=>alert("Settings Updated"));
+}
+
+function resetSettings(){
+    if(!confirm("Reset settings to default values?")) return;
+
+    fetch("/settings/reset",{method:"POST"})
+    .then(res=>res.json())
+    .then(()=>{
+        alert("Settings Reset");
+        loadSettings();
+    });
+}
+
+function applyRetention(){
+    fetch("/settings/apply_retention",{method:"POST"})
+    .then(()=>alert("Old logs cleaned based on retention policy."));
+}
+
+function backupDB(){
+    window.location.href="/settings/backup";
+}
+
+/* AI Sensitivity Live Bar */
+function updateBar(val){
+    let percent = (val/10)*100;
+    let bar = document.getElementById("aiBar");
+
+    bar.style.width = percent + "%";
+
+    if(val>=8){
+        bar.style.background="#ef4444";
+    }else if(val>=5){
+        bar.style.background="#facc15";
+    }else{
+        bar.style.background="#22c55e";
+    }
+}
+
+document.getElementById("ai").addEventListener("input",function(){
+    updateBar(parseInt(this.value));
+});
+
+loadSettings();
+
+</script>
+
+{% endblock %}

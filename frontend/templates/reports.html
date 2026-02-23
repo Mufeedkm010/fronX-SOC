@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Compliance & Analytics Report</h1>
+    <p>ISO 27001 / NIST Styled SOC Report</p>
+</div>
+
+<!-- DATE FILTER -->
+<div class="soc-card">
+    <div class="form-row">
+        <input type="date" id="startDate">
+        <input type="date" id="endDate">
+        <button class="soc-btn primary" onclick="loadReport()">Apply Filter</button>
+    </div>
+</div>
+
+<!-- METRICS -->
+<div class="soc-metrics-row">
+    <div class="metric-card">
+        <h3>Total Logs</h3>
+        <p id="r_logs">--</p>
+    </div>
+    <div class="metric-card">
+        <h3>High Alerts</h3>
+        <p id="r_high">--</p>
+    </div>
+    <div class="metric-card">
+        <h3>Total Incidents</h3>
+        <p id="r_incidents">--</p>
+    </div>
+    <div class="metric-card">
+        <h3>Open Incidents</h3>
+        <p id="r_open">--</p>
+    </div>
+</div>
+
+<!-- PIE CHART -->
+<div class="soc-card small-chart-card">
+    <canvas id="severityPie"></canvas>
+</div>
+
+<!-- MONTHLY TREND -->
+<div class="soc-card small-chart-card">
+    <canvas id="monthlyTrend"></canvas>
+</div>
+
+<!-- EXPORT BUTTONS -->
+<div class="soc-card">
+    <button class="soc-btn success" onclick="downloadCSV()">Download CSV</button>
+    <button class="soc-btn primary" onclick="downloadJSON()">Download JSON</button>
+    <button class="soc-btn danger" onclick="window.print()">Compliance PDF</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+let pieChart;
+let trendChart;
+
+function loadReport(){
+
+    let start = document.getElementById("startDate").value;
+    let end = document.getElementById("endDate").value;
+
+    let url = "/api/report_data?start="+start+"&end="+end;
+
+    fetch(url)
+    .then(res=>res.json())
+    .then(data=>{
+
+        document.getElementById("r_logs").innerText=data.total_logs;
+        document.getElementById("r_high").innerText=data.high_alerts;
+        document.getElementById("r_incidents").innerText=data.total_incidents;
+        document.getElementById("r_open").innerText=data.open_incidents;
+
+        renderPie(data.severity_distribution);
+        renderTrend(data.monthly_trend);
+    });
+}
+
+function renderPie(data){
+
+    let labels = data.map(x=>x[0]);
+    let values = data.map(x=>x[1]);
+
+    if(pieChart) pieChart.destroy();
+
+    pieChart = new Chart(document.getElementById("severityPie"),{
+        type:"pie",
+        data:{
+            labels:labels,
+            datasets:[{data:values}]
+        }
+    });
+}
+
+function renderTrend(data){
+
+    let labels = data.map(x=>x[0]);
+    let values = data.map(x=>x[1]);
+
+    if(trendChart) trendChart.destroy();
+
+    trendChart = new Chart(document.getElementById("monthlyTrend"),{
+        type:"line",
+        data:{
+            labels:labels,
+            datasets:[{label:"Monthly Incidents",data:values}]
+        }
+    });
+}
+
+function downloadJSON(){
+    fetch("/api/report_data")
+    .then(res=>res.json())
+    .then(data=>{
+        let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+        let a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download="soc_report.json";
+        a.click();
+    });
+}
+
+function downloadCSV(){
+    fetch("/api/report_data")
+    .then(res=>res.json())
+    .then(data=>{
+        let csv="Metric,Value\n";
+        csv+="Total Logs,"+data.total_logs+"\n";
+        csv+="High Alerts,"+data.high_alerts+"\n";
+        csv+="Total Incidents,"+data.total_incidents+"\n";
+        csv+="Open Incidents,"+data.open_incidents+"\n";
+
+        let blob=new Blob([csv],{type:"text/csv"});
+        let a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download="soc_report.csv";
+        a.click();
+    });
+}
+
+loadReport();
+
+</script>
+
+{% endblock %}

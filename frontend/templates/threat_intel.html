@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Threat Intelligence</h1>
+    <p>Lookup IP reputation and risk scoring</p>
+</div>
+
+<div class="soc-card">
+    <div class="form-row">
+        <input type="text" id="lookupIP" placeholder="Enter IP Address">
+        <button class="soc-btn primary" onclick="lookup()">
+            Analyze
+        </button>
+    </div>
+</div>
+
+<div class="soc-card" id="intelResult">
+    <p>Awaiting analysis...</p>
+</div>
+
+<script>
+function lookup(){
+
+    let ip = document.getElementById("lookupIP").value.trim();
+
+    if(!ip){
+        alert("Enter IP or CIDR");
+        return;
+    }
+
+    document.getElementById("intelResult").innerHTML="<p>Analyzing...</p>";
+
+    fetch("/api/threat_lookup/" + ip)
+    .then(res => res.json())
+    .then(data => {
+
+        let timelineHTML = "<ul>";
+        data.timeline.forEach(t=>{
+            timelineHTML += `<li>${t[0]} - ${t[1]}</li>`;
+        });
+        timelineHTML += "</ul>";
+
+        document.getElementById("intelResult").innerHTML = `
+            <h3>${data.ip}</h3>
+            <p><strong>AI Risk Score:</strong> ${data.ai_score}</p>
+            <p><strong>Risk Level:</strong>
+                <span class="badge ${data.risk.toLowerCase()}">
+                    ${data.risk}
+                </span>
+            </p>
+            <p><strong>Incidents Matched:</strong> ${data.incidents}</p>
+            <p><strong>IOC Flagged:</strong> ${data.ioc_flagged ? "Yes 🚨" : "No"}</p>
+            <p><strong>Geo:</strong> ${data.geo_country} - ${data.geo_city}</p>
+
+            <h4>Threat History Timeline</h4>
+            ${timelineHTML}
+
+            <button class="soc-btn danger"
+                onclick="addIOC('${data.ip}')">
+                Add to IOC
+            </button>
+        `;
+    });
+}
+
+function addIOC(ip){
+
+    fetch("/api/add_to_ioc/" + ip, { method:"POST" })
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.error){
+            alert(data.error);
+            return;
+        }
+
+        alert("Added to IOC successfully");
+
+        // Redirect to IOC page
+        window.location.href = "/ioc";
+    })
+    .catch(err=>{
+        alert("Error adding to IOC");
+    });
+}
+</script>
+
+{% endblock %}

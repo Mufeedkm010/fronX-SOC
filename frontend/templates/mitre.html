@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>MITRE ATT&CK Intelligence</h1>
+    <p>Technique Coverage & Risk Analytics</p>
+</div>
+
+<!-- ==============================
+     KPI CARDS
+=================================-->
+
+<div class="mitre-kpi-grid">
+
+    <div class="mitre-kpi-card">
+        <h4>Total Techniques</h4>
+        <div id="totalTechniques" class="kpi-value">0</div>
+    </div>
+
+    <div class="mitre-kpi-card">
+        <h4>Active Techniques</h4>
+        <div id="activeTechniques" class="kpi-value">0</div>
+    </div>
+
+    <div class="mitre-kpi-card">
+        <h4>Total Mappings</h4>
+        <div id="totalMappings" class="kpi-value">0</div>
+    </div>
+
+</div>
+
+<!-- ==============================
+     HEATMAP SECTION
+=================================-->
+
+<div class="soc-card mitre-card">
+
+    <div class="mitre-header">
+    <h3>Technique Heatmap</h3>
+    <div>
+        <button class="soc-btn primary" onclick="loadMitre()">Refresh</button>
+
+        {% if current_user.role == "admin" %}
+        <button class="soc-btn danger" onclick="clearMitre()">
+            Clear Mappings
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+
+    <div id="mitreStatus" class="mitre-status">
+        Loading MITRE data...
+    </div>
+
+    <div class="chart-wrapper">
+        <canvas id="mitreChart"></canvas>
+    </div>
+
+</div>
+
+<!-- ==============================
+     INCIDENT DETAILS PANEL
+=================================-->
+
+<div class="soc-card">
+    <h3>Mapped Incidents</h3>
+    <div id="incidentList" class="incident-list">
+        Click a bar to view linked incidents.
+    </div>
+</div>
+
+<style>
+
+.mitre-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.mitre-kpi-card {
+    background: rgba(255,255,255,0.05);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.kpi-value {
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.mitre-card {
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.mitre-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.mitre-status {
+    margin-bottom: 15px;
+    opacity: 0.8;
+}
+
+.chart-wrapper {
+    height: 450px;
+}
+
+.incident-list {
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+}
+
+.incident-item {
+    padding: 8px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+}
+
+</style>
+
+<script>
+
+let mitreChartInstance = null;
+
+async function loadMitre() {
+
+    const statusDiv = document.getElementById("mitreStatus");
+    statusDiv.innerText = "Loading MITRE data...";
+
+    try {
+
+        const res = await fetch("/api/mitre_heatmap");
+        const data = await res.json();
+
+        const labels = data.map(d => d[0] + " - " + d[1]);
+        const values = data.map(d => d[3]);
+
+        const totalTechniques = data.length;
+        const activeTechniques = values.filter(v => v > 0).length;
+        const totalMappings = values.reduce((a,b) => a + b, 0);
+
+        document.getElementById("totalTechniques").innerText = totalTechniques;
+        document.getElementById("activeTechniques").innerText = activeTechniques;
+        document.getElementById("totalMappings").innerText = totalMappings;
+
+        statusDiv.innerText = "MITRE data loaded successfully.";
+
+        const ctx = document.getElementById("mitreChart").getContext("2d");
+
+        if (mitreChartInstance) {
+            mitreChartInstance.destroy();
+        }
+
+        mitreChartInstance = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Technique Usage",
+                    data: values,
+                    backgroundColor: values.map(v =>
+                        v > 0 ? "rgba(255, 99, 132, 0.8)" : "rgba(100,100,100,0.2)"
+                    )
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const techniqueId = data[index][0];
+                        loadIncidentsForTechnique(techniqueId);
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+    } catch (err) {
+        statusDiv.innerText = "Error loading MITRE data.";
+        console.error(err);
+    }
+}
+async function clearMitre() {
+
+    if (!confirm("Are you sure you want to clear all MITRE mappings?")) {
+        return;
+    }
+
+    try {
+
+        const res = await fetch("/admin/clear_mitre", {
+            method: "POST"
+        });
+
+        const data = await res.json();
+
+        if (res.status === 403) {
+            alert("Unauthorized action.");
+            return;
+        }
+
+        alert("MITRE mappings cleared successfully.");
+
+        loadMitre();
+        updateSidebarBadges(); // refresh badge
+
+    } catch (err) {
+        console.error("Clear MITRE error:", err);
+    }
+}
+
+
+async function loadIncidentsForTechnique(techniqueId) {
+
+    const res = await fetch("/api/incidents_with_score");
+    const incidents = await res.json();
+
+    const list = document.getElementById("incidentList");
+    list.innerHTML = "";
+
+    const filtered = incidents.filter(i => i.mitre.includes(techniqueId));
+
+    if (filtered.length === 0) {
+        list.innerHTML = "No incidents mapped to " + techniqueId;
+        return;
+    }
+
+    filtered.forEach(inc => {
+        list.innerHTML += `
+            <div class="incident-item">
+                <strong>ID:</strong> ${inc.id} |
+                <strong>IP:</strong> ${inc.ip} |
+                <strong>AI Score:</strong> ${inc.ai_score} |
+                <strong>Risk:</strong> ${inc.risk}
+            </div>
+        `;
+    });
+}
+
+loadMitre();
+setInterval(loadMitre, 15000);
+
+</script>
+
+{% endblock %}
